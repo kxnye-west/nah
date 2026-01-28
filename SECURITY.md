@@ -12,6 +12,33 @@ Only current versions of the site are being updated, if you are using an older v
 | V4.x.x  | :x:       |
 | < V4.0  | :x:       |
 
+## Security Best Practices
+
+### Environment Variables & Configuration
+
+- **Never commit credentials** to the repository. Use environment variables instead.
+- Copy `.env.example` to `.env` and configure with your actual values:
+  ```bash
+  cp .env.example .env
+  ```
+- Set `AUTH_ENABLED=true` and provide `AUTH_USERS` as JSON in `.env` if you need authentication
+- Configure `CORS_ORIGIN` to your specific domain (e.g., `https://example.com`)
+
+### Required Dependencies
+
+The security fixes require `helmet.js` for HTTP security headers. Install dependencies:
+```bash
+pnpm install
+```
+
+### Deployment Considerations
+
+- Always run the application with `HTTPS` in production
+- Regularly update dependencies: `pnpm update`
+- Monitor dependency vulnerabilities: `npm audit`
+- Never expose debug logs containing sensitive information
+- Use strong passwords if enabling authentication
+
 ## Reporting a Vulnerability
 
 You can privately report a vulnerability [here](https://github.com/InterstellarNetwork/Interstellar/security/advisories/new).

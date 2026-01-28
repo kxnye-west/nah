@@ -2,7 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import fetch from "node-fetch"
 
-const LICENSE_SERVER_URL = "https://masqr.gointerstellar.app/validate?license="
+const LICENSE_SERVER_URL = "https://masqr.gointerstellar.app/validate"
 const Fail = fs.readFileSync("Failed.html", "utf8")
 
 export function setupMasqr(app) {
@@ -36,12 +36,14 @@ export function setupMasqr(app) {
     const pass = auth[1]
 
     try {
-      const licenseCheckResponse = await fetch(
-        LICENSE_SERVER_URL + pass + "&host=" + req.headers.host
-      )
+      const licenseCheckResponse = await fetch(LICENSE_SERVER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ license: pass, host: req.headers.host }),
+      })
       const licenseCheck = (await licenseCheckResponse.json())["status"]
       console.log(
-        LICENSE_SERVER_URL + pass + "&host=" + req.headers.host + " returned " + licenseCheck
+        `License validation for host ${req.headers.host} returned: ${licenseCheck}`
       )
       if (licenseCheck === "License valid") {
         res.cookie("authcheck", "true", {
@@ -63,9 +65,16 @@ async function MasqFail(req, res) {
   if (!req.headers.host) {
     return
   }
-  const unsafeSuffix = req.headers.host + ".html"
-  const safeSuffix = path.normalize(unsafeSuffix).replace(/^(\.\.(\/|\\|$))+/, "")
-  const safeJoin = path.join(process.cwd() + "/Masqrd", safeSuffix)
+  const masqrDir = path.resolve(process.cwd(), "Masqrd")
+  const requestedFile = req.headers.host + ".html"
+  const safeJoin = path.resolve(masqrDir, requestedFile)
+  
+  if (!safeJoin.startsWith(masqrDir)) {
+    res.setHeader("Content-Type", "text/html")
+    res.send(Fail)
+    return
+  }
+  
   try {
     await fs.promises.access(safeJoin)
     const FailLocal = await fs.promises.readFile(safeJoin, "utf8")
